@@ -1,0 +1,49 @@
+Passport node module is a middleware that helps in easy authentication of user.
+Different type of authentication:
+outh 1.0
+outh 2.0
+local
+web token
+and many more
+
+To use passport import passport
+To use local passport import passport-local
+For mongoose Use passport-local-mongoose
+
+In mongoose to use passport local it has a lot of methods for our help
+
+To store username and passport in mongoose in encrypted way it has a function
+user --mongoose schema to store user detail
+user=mongoose.Schema({
+    //username:{...}, //not required
+    //password:{...}, //not required as passport plugin is used so it will be stored automatically
+    admin:{...}
+})
+user.plugin(passportLocalMongoose)
+module.exports=mongoose.modal('user',user);
+
+
+For local authentication:
+user=>user modal in mongoose
+var LocalStrategy = require('passport-local').Strategy;
+passport.use(new LocalStrategy(//function for authentication
+    //As username and password is stored using passportLocalMongoose plugin
+    //it has a method user.authenticate() to authenticate user
+    user.authenticate()
+))
+
+username and password required by passort should be in req.body
+and it stores the authenticated user in req.user .
+
+
+To use sessions to use passport data
+Data used is needed to be serailized
+To save authenticated user in session data is first needed to be serailized
+and to get data from session data is needed to be deserialized
+Passport.serialize and passport.deserialize are used to set id as a cookie in
+the user's browser and to get the id from the cookie when it then used to get user info in a callback
+It is also done using inbuilt methods
+passport.serailizeUser(user.serailizeUser());
+passport.deserializeUser(user.deserializeUser());
+
+*We can use this function because of plugin line in user modal
