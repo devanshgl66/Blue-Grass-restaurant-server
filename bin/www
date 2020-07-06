@@ -99,12 +99,12 @@ function onListening() {
 const https=require('https')
 const fs=require('fs')
 
-var secPort = normalizePort(process.env.PORT || '3444');
+var secPort = normalizePort(process.env.PORT+443 || '3444');
 app.set('secPort',secPort);
 
 var options = {
-  key: fs.readFileSync(__dirname+'/private.key'),
-  cert: fs.readFileSync(__dirname+'/certificate.pem')
+  key: fs.readFileSync(__dirname+'/server.key'),
+  cert: fs.readFileSync(__dirname+'/server.pass.key')
 };
 
 var secureServer = https.createServer(options,app);
