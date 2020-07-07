@@ -116,7 +116,7 @@ router.use(bodyParser.json());
 router.route('/signup')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .post(cors.corsWithOptions,(req,res,next)=>{
-  user.register(new user({
+  user.register(new user( {
     username:req.body.username,
     firstname:req.body.firstname || '',
     lastname:req.body.lastname || ''
@@ -125,7 +125,7 @@ router.route('/signup')
     if(err){
       res.statusCode=500;
       res.setHeader('content-type','application/json');
-      res.json({err:err});
+      res.json({success:false,err:err});
     }
     else{
       res.statusCode=200;
@@ -140,21 +140,37 @@ router.route('/login')
 .post(cors.corsWithOptions,(req,res,next)=>{
   // console.log(req.body)
   if(req.signedCookies.token){
-    // console.log(authenticate.verifyUser())
-    res.statusCode=200;
+    console.log(authenticate.verifyUser)
+    res.statusCode=400;
     res.setHeader('content-type','application/json');
     res.json({success:false,status:'You are already logged in!'});
   }
   else{
     // passport.authenticate('local') will authenticate itself and handle any error if occured
-    passport.authenticate('local')(req,res,()=>{
-    //adding tokens for jwt token
-      var token=authenticate.getToken({_id:req.user._id})
-      res.cookie('token',token,{signed:true,httpOnly:true})
-      res.statusCode=200;
-      res.setHeader('content-type','application/json');
-      res.json({success:true, status: 'You are logged in!'}) 
-    });
+    // console.log('hlo')
+    passport.authenticate('local',(err,User,info)=>{
+      // console.log(err,User,info)
+      if(err)
+        next(err)
+      else if(info){
+        var err=new Error(info)
+        next(err)
+        // throw err;
+      }
+      else{
+        req.user=User
+        console.log(req.user)
+        var token=authenticate.getToken({_id:req.user._id})
+        res.cookie('token',token,{signed:true})
+        res.statusCode=200;
+        res.setHeader('content-type','application/json');
+        res.send({success:true, status: 'You are logged in!'})
+      }
+    })(req,res,()=>{
+      // console.log('hlos')
+      res.send()
+    })
+    // console.log('as')
   }
 })  
 
@@ -162,9 +178,9 @@ router.route('/')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .get(cors.cors,authenticate.verifyUser,(req,res,next)=>{
   if(req.user.admin==false){
-    var err=new Error('Not allowed')
-    next(err)
-    return
+    res.statusCode=400;
+    res.setHeader('content-type','application/json');
+    res.send({success:false, status:'Not allowed'})
   }
   user.find({})
   .then((users)=>{
@@ -182,11 +198,15 @@ router.route('/')
       })
     }
     else{
-      res.send('You are not allowed this task.');
+      res.statusCode=400;
+      res.setHeader('content-type','application/json');
+      res.send({success:true, status: 'You are not allowed this task.'})
     }
   }
   else{
-    res.send('Login first');
+    res.statusCode=400;
+    res.setHeader('content-type','application/json');
+    res.send({success:true, status: 'Login First.'})
   }
 })
 
@@ -216,9 +236,9 @@ router.route('/logout')
   }
   else{
     // console.log('B')
-    res.statusCode=200
+    res.statusCode=400
     res.setHeader('content-type','text/plain')
-    res.send('Login first.')
+    res.send({success:false,status:'Login first.'})
   }
   //TODO logout
 })
