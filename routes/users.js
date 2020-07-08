@@ -161,7 +161,7 @@ router.route('/login')
         req.user=User
         console.log(req.user)
         var token=authenticate.getToken({_id:req.user._id})
-        res.cookie('token',token,{signed:true})
+        res.cookie('token',token,{signed:true,httpOnly:true,expires:new Date(Date.now()+(24*60*60*1000))})
         res.statusCode=200;
         res.setHeader('content-type','application/json');
         res.send({success:true, status: 'You are logged in!'})
