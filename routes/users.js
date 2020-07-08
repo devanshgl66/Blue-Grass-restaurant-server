@@ -253,12 +253,12 @@ router.route('/availableUName')
     if(User && User.length){
       res.statusCode=200
       res.setHeader('content-type','application/json')
-      res.send({available:true,username:username})
+      res.send({available:false,username:username})
     }
     else{
       res.statusCode=200
       res.setHeader('content-type','application/json')
-      res.send({available:false,username:username})
+      res.send({available:true,username:username})
     }
   })
   .catch(err=>next(err))
