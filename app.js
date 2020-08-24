@@ -20,7 +20,12 @@ const userRouter=require('./routes/users');
 const config=require('./config');
 const feedbackRouter = require('./routes/feedback');
 //connecting mongoose
-mongoose.connect(config.mongodburl,{useNewUrlParser:true,useUnifiedTopology:true});
+mongoose.connect(config.mongodburl,{
+    useNewUrlParser:true,
+    useUnifiedTopology:true,
+    useCreateIndex:true,
+    useFindAndModify:false
+  });
 
 var app = express();
 

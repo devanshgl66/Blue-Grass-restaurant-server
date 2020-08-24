@@ -1,108 +1,3 @@
-// var express = require('express');
-// const bodyPaser=require('body-parser');
-// var users=require('../modals/users');
-
-// var router = express.Router();
-// router.use(bodyPaser.json());
-// /* GET users listing. */
-// router.get('/', function(req, res, next) {
-//   res.send('respond with a resource');
-// });
-// router.route('/signup')
-// .post((req,res,next)=>{
-//   //if username already not present then add it to users modal
-//   users.findOne({username:req.body.username})
-//   .then((user)=>{
-//     if(user !=null){
-//       var err = new Error('User ' + req.body.username + ' already exists!');
-//       err.status = 403;
-//       next(err);
-//     }
-//     else{
-//       return users.create({
-//         username:req.body.username,
-//         password:req.body.password
-//       });
-//     }
-//   })
-//   .then((user)=>{
-//     if(user){
-//       res.statusCode=200;
-//       res.setHeader('content-Type','text/plain');
-//       res.end('User ' +req.body.user +' registered succesfully');
-//     }
-//     else{
-//       var err=new Error('Some error occured while registering.Please try again');
-//       err.status=403;
-//       next(err);
-//     }
-//   })
-//   .catch((err)=>next(err));
-// });
-// router.route('/login')
-// .post((req,res,next)=>{
-//   //checking if user already logged in or not
-//   console.log(req.session);
-//   if(!req.session.user) {
-//     //user is not logged in.
-//     var authHeader = req.headers.authorization;
-    
-//     if (!authHeader) {
-//       var err = new Error('You are not authenticated!');
-//       res.setHeader('WWW-Authenticate', 'Basic');
-//       err.status = 401;
-//       return next(err);
-//     }
-  
-//     var auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-//     var username = auth[0];
-//     var password = auth[1];
-  
-//     users.findOne({username: username})
-//     .then((user) => {
-//       if (user === null) {
-//         var err = new Error('User ' + username + ' does not exist!');
-//         err.status = 403;
-//         return next(err);
-//       }
-//       else if (user.password !== password) {
-//         var err = new Error('Your password is incorrect!');
-//         err.status = 403;
-//         return next(err);
-//       }
-//       else if (user.username === username && user.password === password) {
-//         req.session.user = 'authenticated';
-//         res.statusCode = 200;
-//         res.setHeader('Content-Type', 'text/plain');
-//         res.end('You are authenticated!')
-//       }
-//     })
-//     .catch((err) => next(err));
-//   }
-//   else {
-//     res.statusCode = 200;
-//     res.setHeader('Content-Type', 'text/plain');
-//     res.end('You are already authenticated!');
-//   }
-// })
-// router.route('/logout')
-// .get((req,res,next)=>{
-//   console.log(req.session);
-//   if(!req.session.user){
-//     var err=new Error('You are not logged in');
-//     err.status=403;
-//     next(err);
-//   }
-//   else{
-//     req.session.destroy();
-//     res.clearCookie('session-id');
-//     //sent to home page.
-//     res.redirect('/');
-//   }
-// })
-// module.exports = router;
-
-
 //Passport user
 const express=require('express');
 const bodyParser=require('body-parser');
@@ -112,29 +7,82 @@ var router=express.Router();
 const authenticate=require ('../authenticate')
 const cookieparser=require('cookie-parser')
 const cors=require('../cors')
+const nodemailer = require('nodemailer');
 router.use(bodyParser.json());
+
+//function to send otp to user
+async function sendOTP(email,otp,subject,text){
+  var transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'a9416749221@gmail.com',
+      pass: 'qwertypopo'
+    }
+  });
+  
+  var mailOptions = {
+    from: 'a9416749221@gmail.com',
+    to: email,
+    subject: subject,
+    html: `${text}${otp}</h1>`
+  };
+  try{
+    const info=await transporter.sendMail(mailOptions)
+    console.log('Email sent: ' + info.response);
+    return true;
+  }
+  catch(err){
+    console.log(err)
+    return false;
+  }
+}
+//function to generate otp , storing in db and sending to user
+async function genOTP(email,subject,text,typeOfOtp){
+  let otp=Math.floor(Math.random()*900000+100000)
+  //sending OTP to user
+  const result = await sendOTP(email,otp,subject,text)
+  if(result==true){
+    //saving OTP on database
+    try{
+      const r2=await user.findOneAndUpdate({email:email},{$set:{[typeOfOtp]:otp}});
+      return true;
+    }catch(err){
+      console.log(err)
+      return false
+    }
+  }
+  else{
+    return false;
+  }  
+}
 router.route('/signup')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .post(cors.corsWithOptions,(req,res,next)=>{
   user.register(new user( {
     username:req.body.username,
     firstname:req.body.firstname || '',
-    lastname:req.body.lastname || ''
+    lastname:req.body.lastname || '',
+    email:req.body.email
     //any other field else to send here 
   }),req.body.password,(err,User)=>{
     if(err){
+      if(err.errmsg && err.errmsg.includes('duplicate key error index: node.users.$email_1'))
+        err= {
+          name: "UserExistsError",
+          message: "A user with the given email is already registered"
+        }
       res.statusCode=500;
       res.setHeader('content-type','application/json');
       res.json({success:false,err:err});
     }
     else{
+      genOTP(req.body.email,'OTP for verifying at restaurant blue grass',`Your OTP to verify your email at restaurant blue grass is<br><h1>`,'verifyOtp');
       res.statusCode=200;
       res.setHeader('content-type','application/json');
-      res.json({success:true, status: 'Registration Successful!'})
+      res.json({success:true, status: 'Registration Successful!\nPlease verify your email by entering otp sent to your email.'})
     }
   })
 })
-
 router.route('/login')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .post(cors.corsWithOptions,(req,res,next)=>{
@@ -148,6 +96,16 @@ router.route('/login')
   else{
     // passport.authenticate('local') will authenticate itself and handle any error if occured
     // console.log('hlo')
+    user.findOne({username:req.body.username})
+    .then((User)=>{
+      console.log(User);
+      if(User.verified==false){
+        res.statusCode=400;
+        res.setHeader('content-type','application/json');
+        res.send({success:false, status:'Please verify your email first.'})  
+        next()
+      }
+    })
     passport.authenticate('local',(err,User,info)=>{
       // console.log(err,User,info)
       if(err)
@@ -173,7 +131,145 @@ router.route('/login')
     // console.log('as')
   }
 })  
+router.route('/resendOTP')
+.options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
+.post(cors.corsWithOptions,(req,res,next)=>{
+  user.findOne({email:req.body.email})
+  .then((User)=>{
+    if(!User){
+      res.statusCode=400
+      res.setHeader('content-type','application/json')
+      res.send({success:false,status:'Email not found.Please register first'})
+    }
+    else if(User.verified==true){
+      res.statusCode=400
+      res.setHeader('content-type','application/json')
+      res.send({success:false,status:'Email already verified.'})
+    }
+    else{
+      genOTP(req.body.email,'OTP for verifying at restaurant blue grass',`Your OTP to verify your email at restaurant blue grass is<br><h1>`,'verifyOtp');
+      res.statusCode=200
+      res.setHeader('content-type','application/json')
+      res.send({success:true,status:'OTP sent.'})
+    }
+  })
+  .catch((err)=>{
+    res.statusCode=500
+    res.setHeader('content-type','application/json')
+    res.send({success:false,err:err})
+  })
+})
+router.route('/forgetPassword/genOTP')
+.options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
+.post(cors.corsWithOptions,(req,res,next)=>{
+  user.findOne({email:req.body.email})
+  .then((User)=>{
+    if(!User){
+      res.statusCode=400
+      res.setHeader('content-type','application/json')
+      res.send({success:false,status:'Email not found.Please register first'})
+    }
+    else{
+      genOTP(req.body.email,'OTP for change password at restaurant blue grass',`Your OTP to change password at restaurant blue grass is<br><h1>`,'forgetPasswordOtp')
+      .then((result)=>{
+        if(result==true){
+          res.statusCode=200
+          res.setHeader('content-type','application/json')
+          res.send({success:true,status:'OTP sent.'})
+        }
+        else throw new Error('error occured')
+      })
+      .catch((err)=>{
+        res.statusCode=500
+        res.setHeader('content-type','application/json')
+        res.send({success:false,err:err})
+      })
+    }
+  })
+  .catch((err)=>{
+    res.statusCode=500
+    res.setHeader('content-type','application/json')
+    res.send({success:false,err:err})
+  })
+})
+router.route('/forgetPassword/changePassword')
+.options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
+.post(cors.corsWithOptions,(req,res,next)=>{
+  user.findOne({email:req.body.email})
+  .then((User)=>{
+    if(!User){
+      res.statusCode=400
+      res.setHeader('content-type','application/json')
+      res.send({success:false,status:'Email not found.Please register first'})
+    }
+    else{
+      if(req.body.otp!=User.forgetPasswordOtp || req.body.otp==-1){
+        res.statusCode=400
+        res.setHeader('content-type','application/json')
+        res.send({success:false,status:'Wrong OTP'})
+      }
+      else{
+        user.findOneAndUpdate({email:req.body.email},{$set:{forgetPasswordOtp:-1}},(err,User)=>{
+          if(err){
+            res.statusCode=500
+            res.setHeader('content-type','application/json')
+            res.send({success:false,err:err})    
+          }
+          else{
+            User.setPassword(req.body.password)
+            .then((newUser)=>{
+              newUser.save();
+              res.status(200).json({message: 'password reset successful'});
+            })  
+          }
+        })
+      }
+    }
+  })  
+})
 
+router.route('/verify')
+.options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
+.post(cors.corsWithOptions,(req,res,next)=>{
+  //body contains email and otp
+  user.findOne({email:req.body.email})
+  .then((User)=>{
+    if(!User){
+      res.statusCode=400
+      res.setHeader('content-type','application/json')
+      res.send({success:false,status:'Email not found.Please register first'})
+    }
+    else if(User.verified==true){
+      res.statusCode=400
+      res.setHeader('content-type','application/json')
+      res.send({success:false,status:'Email already verified.'})
+    }
+    else if(req.body.otp!=User.verifyOtp || req.body.otp==-1){
+      res.statusCode=400
+      res.setHeader('content-type','text/plain')
+      res.send({success:false,status:'Wrong OTP'})
+    }
+    else{
+      user.findOneAndUpdate({email:req.body.email},{$set:{verified:true,verifyOtp:-1}},(err,User)=>{
+        if(err){
+          res.statusCode=500
+          res.setHeader('content-type','application/json')
+          res.send({success:false,err:err})    
+        }
+        else{
+          res.statusCode=200
+          res.setHeader('content-type','application/json')
+          res.send({success:true,status:'Email verified'})  
+        }
+      })
+    } 
+  })
+  .catch((err)=>{
+    res.statusCode=500
+    res.setHeader('content-type','application/json')
+    res.send({success:false,err:err})
+  })
+})
 router.route('/')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .get(cors.cors,authenticate.verifyUser,(req,res,next)=>{
@@ -237,7 +333,7 @@ router.route('/logout')
   else{
     // console.log('B')
     res.statusCode=400
-    res.setHeader('content-type','text/plain')
+    res.setHeader('content-type','application/json')
     res.send({success:false,status:'Login first.'})
   }
   //TODO logout
