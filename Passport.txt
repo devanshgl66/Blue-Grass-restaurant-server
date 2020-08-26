@@ -16,8 +16,8 @@ To store username and passport in mongoose in encrypted way it has a function
 user --mongoose schema to store user detail
 user=mongoose.Schema({
     //username:{...}, //not required
-    //password:{...}, //not required as passport plugin is used so it will be stored automatically
-    admin:{...}
+    //password:{...}, //not required as passport plugin is used so it will be stored automatically as salt and hashed data
+    admin:{...} //include any other field
 })
 user.plugin(passportLocalMongoose)
 module.exports=mongoose.modal('user',user);

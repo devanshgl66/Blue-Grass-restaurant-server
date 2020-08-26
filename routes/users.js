@@ -131,7 +131,7 @@ router.route('/login')
     // console.log('as')
   }
 })  
-router.route('/resendOTP')
+router.route('/verify/resendOTP')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .post(cors.corsWithOptions,(req,res,next)=>{
   user.findOne({email:req.body.email})
@@ -228,7 +228,7 @@ router.route('/forgetPassword/changePassword')
   })  
 })
 
-router.route('/verify')
+router.route('/verify/verify')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .post(cors.corsWithOptions,(req,res,next)=>{
   //body contains email and otp
