@@ -66,7 +66,8 @@ router.route('/signup')
     //any other field else to send here 
   }),req.body.password,(err,User)=>{
     if(err){
-      if(err.errmsg && err.errmsg.includes('duplicate key error index: node.users.$email_1'))
+      if(err.errmsg && err.errmsg.includes('duplicate key error index: node.users.$email_1')  //for local mongodb
+      || err.errmsg.includes('duplicate key error collection: node.users index: email_1 dup key: { email:'))  //for mongoose atlas
         err= {
           name: "UserExistsError",
           message: "A user with the given email is already registered"
@@ -98,8 +99,9 @@ router.route('/login')
     // console.log('hlo')
     user.findOne({username:req.body.username})
     .then((User)=>{
+      
       console.log(User);
-      if(User.verified==false){
+      if(User && User.verified==false){
         res.statusCode=400;
         res.setHeader('content-type','application/json');
         res.send({success:false, status:'Please verify your email first.'})  

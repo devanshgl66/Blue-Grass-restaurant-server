@@ -20,7 +20,7 @@
 //user Modal to store user auth details using passport
 const mongoose=require('mongoose');
 const passportLocalMongoose=require('passport-local-mongoose');
-var user=new mongoose.Schema({
+const user=new mongoose.Schema({
     firstname:{
         type:String,
         default:''
@@ -34,7 +34,8 @@ var user=new mongoose.Schema({
         default:false
     },
     email:{     
-        /* unique here doesn't work so inside terminal open mongoose and use 
+        /* unique here doesn't work on local mongoose but works on mongoose atlas
+         so inside terminal open mongoose and use 
         command db.collectionName.createIndex( { "email": 1 }, { unique: true } )
         and check it using db.collectionName.getIndexes() */
         type:String,
