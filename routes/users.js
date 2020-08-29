@@ -13,15 +13,15 @@ router.use(bodyParser.json());
 //function to send otp to user
 async function sendOTP(email,otp,subject,text){
   var transporter = nodemailer.createTransport({
-    service: 'gmail',
+    service: 'hotmail',
     auth: {
-      user: 'a9416749221@gmail.com',
-      pass: 'qwertypopo'
+      user: 'restaurantbluegrass@hotmail.com',
+      pass: 'Microsoft@12'
     }
   });
   
   var mailOptions = {
-    from: 'a9416749221@gmail.com',
+    from: 'restaurantbluegrass@hotmail.com',
     to: email,
     subject: subject,
     html: `${text}${otp}</h1>`
@@ -72,7 +72,7 @@ router.route('/signup')
           name: "UserExistsError",
           message: "A user with the given email is already registered"
         }
-      res.statusCode=500;
+      res.statusCode=400;
       res.setHeader('content-type','application/json');
       res.json({success:false,err:err});
     }
@@ -248,7 +248,7 @@ router.route('/verify/verify')
     }
     else if(req.body.otp!=User.verifyOtp || req.body.otp==-1){
       res.statusCode=400
-      res.setHeader('content-type','text/plain')
+      res.setHeader('content-type','application/json')
       res.send({success:false,status:'Wrong OTP'})
     }
     else{
