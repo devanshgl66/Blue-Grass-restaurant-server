@@ -88,8 +88,8 @@ router.route('/login')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .post(cors.corsWithOptions,(req,res,next)=>{
   // console.log(req.body)
-  if(req.signedCookies.token){
-    console.log(authenticate.verifyUser)
+  if(req.body.token){
+    // console.log(authenticate.verifyUser)
     res.statusCode=400;
     res.setHeader('content-type','application/json');
     res.json({success:false,status:'You are already logged in!'});
@@ -100,7 +100,7 @@ router.route('/login')
     user.findOne({username:req.body.username})
     .then((User)=>{
       
-      console.log(User);
+      // console.log(User);
       if(User && User.verified==false){
         res.statusCode=400;
         res.setHeader('content-type','application/json');
@@ -121,10 +121,10 @@ router.route('/login')
         req.user=User
         console.log(req.user)
         var token=authenticate.getToken({_id:req.user._id})
-        res.cookie('token',token,{signed:true,httpOnly:true,expires:new Date(Date.now()+(24*60*60*1000))})
+        // res.cookie('token',token,{signed:true,httpOnly:true,expires:new Date(Date.now()+(24*60*60*1000))})
         res.statusCode=200;
         res.setHeader('content-type','application/json');
-        res.send({success:true, status: 'You are logged in!'})
+        res.send({success:true,token:token, status: 'You are logged in!'})
       }
     })(req,res,()=>{
       // console.log('hlos')
@@ -312,22 +312,9 @@ router.route('/')
 router.route('/logout')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .post(cors.corsWithOptions,(req,res,next)=>{
-  // if(req.session.user){  
-  //   req.session.destroy();
-  //   res.clearCookie();
-  //   res.statusCode=200;
-  //   res.setHeader('content-type','application/json');
-  //   res.json({success:true,status:'you are logout successfully'});
-  // }
-  // else{
-  //   res.statusCode=500;
-  //   res.setHeader('content-type','application/json');
-  //   res.json({err:err});
-  // }
-
-  if( req.signedCookies.token){
+  if( req.body.token){
     // console.log('A')
-    res.clearCookie('token')
+    // res.clearCookie('token')
     res.statusCode=200
     res.setHeader('content-type','application/json')
     res.send({success:true,status:'You have successfully logged out'})

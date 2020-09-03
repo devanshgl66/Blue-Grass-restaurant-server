@@ -24,7 +24,7 @@ const config=require('./config')
 
 exports.getToken=function (user){
     return jwt.sign(user,config.secretKey,{
-        expiresIn:'1d' //this token expires in 7days
+        expiresIn:'1d' //this token expires in 1day
     })
 }
 var cookieExtractor = (req)=> {
@@ -46,7 +46,8 @@ var cookieExtractor = (req)=> {
     return token;
 };
 var opts={}
-opts.jwtFromRequest=ExtractJwt.fromExtractors([cookieExtractor]);
+// opts.jwtFromRequest=ExtractJwt.fromExtractors([cookieExtractor]);
+opts.jwtFromRequest=ExtractJwt.fromBodyField("token");
 opts.secretOrKey = config.secretKey
 //payload is the data in token
 passport.use(new JwtStrategy(opts,(jwt_payload,done)=>{
@@ -70,40 +71,36 @@ passport.use(new JwtStrategy(opts,(jwt_payload,done)=>{
 
 exports.verifyUser=(req,res,next)=>{
     var e=new Error();
-    if (req && req.signedCookies)
+    if (req && req.body.token)
     {
-        token = req.signedCookies['token'];
+        token = req.body['token'];
         jwt.verify(token,config.secretKey,(err,decoded)=>{
             // console.log('err',err)
             // console.log('decode',decoded)
             if(err){
-                res.clearCookie('token')
-                res.statusCode=400
-                res.setHeader('content-type','application/json')
-                res.send({success:false,status:'You are logged out.Please log in again.'})
-                // console.log('Error')
-                // e.status=400
-                // e.message='You are logged out.Please log in.'
-                
+                var err=new Error("Invalid login.Please try again")
+                err.status=400;
+                next(err);
+            }
+            else{
+                passport.authenticate('jwt',{session:false})(req,res,()=>next())
             }
         })
     }
-    if(e.message)
-        next(e)
-    else
-        passport.authenticate('jwt',{session:false})(req,res,()=>next())
+    else{
+        var err=new Error("You are logged out.Please log in again.")
+        err.status=400;
+        next(err);
+    }
 }
 exports.verifyAdmin=(req,res,next)=>{
     //can be performed by admin only
     if(req.user.admin==false){
         var err=new Error('Unauthorized')
+        err.status=401; //unauthorized
         next(err)
-        // console.log('no')
-        return false
     }
-    else {
-        // console.log('yes')
+    else 
         next()
-        return true
-    }
+    
 }

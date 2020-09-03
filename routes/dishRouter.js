@@ -97,6 +97,7 @@ dishRouter.route('/:dishId/comments')
     .populate('comments.author')
     .then((dish)=>{
         if(dish!= null){
+            console.log(dish)
             //send comments
             res.statusCode=200;
             res.setHeader('content-type','application/json');
