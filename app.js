@@ -261,10 +261,13 @@ app.use(function(err, req, res, next) {
   // console.log(err.message)
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
-
+  // console.log(err);
+  res.setHeader("content-type","application/json")
   // render the error page
   res.status(err.status || 500);
-  res.send({success:false,status:err.message});
+  res.send({err:err.message});
 });
-
+app.listen(3000,()=>{
+  console.log("server running")
+})
 module.exports = app;

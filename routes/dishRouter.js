@@ -4,6 +4,7 @@ const bodyParser=require('body-parser');
 const Dishes=require('../modals/dishes');
 const authenticate=require('../authenticate')
 const cors=require('../cors')
+const imageHelper=require("../helper/images")
 const dishRouter=express.Router();
 dishRouter.use(bodyParser.json())
 dishRouter.route('/')
@@ -33,13 +34,21 @@ dishRouter.route('/')
 .post(cors.corsWithOptions,authenticate.verifyUser,authenticate.verifyAdmin,(req,res,next)=>{
     //insert a document
     //data parsed so it is in req.body
-    Dishes.create(req.body)
-    .then((docs)=>{
-        res.statusCode=200;
-        res.setHeader('content-type','application/json');
-        res.send(docs);     
-    })
-    .catch((err)=>next(err));
+    req.dest="./public/images/";
+    req.imgName="image";
+  imageHelper.uploadImage(req,res,()=>{
+      Dishes.create({
+            image:req.name,
+            ...req.body
+      })
+        .then((docs)=>{
+            res.statusCode=200;
+            res.setHeader('content-type','application/json');
+            res.send(docs);     
+        })
+        .catch((err)=>next(err));
+  })
+    
 })
 .put(cors.corsWithOptions,authenticate.verifyUser,(req,res,next)=>{
     res.statusCode = 403;
@@ -106,7 +115,7 @@ dishRouter.route('/:dishId/comments')
         else{
             res.statusCode=404
             res.setHeader('content-type','application/json')
-            res.send({success:false,status:'No dish found with id: '+req.params.dishId})                
+            res.send({status:'No dish found with id: '+req.params.dishId})                
         }
     })
     .catch((err)=>next(err));
@@ -138,7 +147,7 @@ dishRouter.route('/:dishId/comments')
         else{
             res.statusCode=404
             res.setHeader('content-type','application/json')
-            res.send({success:false,status:'No dish found with id: '+req.params.dishId})                
+            res.send({status:'No dish found with id: '+req.params.dishId})                
         
         }
     })
@@ -164,7 +173,7 @@ dishRouter.route('/:dishId/comments')
         else{
             res.statusCode=404
             res.setHeader('content-type','application/json')
-            res.send({success:false,status:'No dish found with id: '+req.params.dishId})                
+            res.send({status:'No dish found with id: '+req.params.dishId})                
         
         }
     })

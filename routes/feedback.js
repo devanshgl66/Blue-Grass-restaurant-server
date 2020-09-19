@@ -17,14 +17,11 @@ feedbackRouter.route('/')
             res.send(feedback)
         }
         else{
-            res.statusCode=500
-            res.setHeader('content-type','application/json')
-            res.send({success:false,err:'Error occured.\nTry again later.'})
+            var err=new Error('Error occured.\nTry again later.');
+            err.status=500;
+            next(err);
         }
-    },error=>{
-        res.statusCode=500
-        res.setHeader('content-type','application/json')
-        res.send({success:false,status:error.message})
+    },error=>{next(error)
     })
     .catch(err=>next(err))
 })
@@ -38,9 +35,9 @@ feedbackRouter.route('/')
             res.send(feedback)
         }
         else{
-            res.statusCode=500
-            res.setHeader('content-type','application/json')
-            res.send({success:false,status:'Feedback could not be posted.Server error'})
+            var err=new Error('Feedback could not be posted.Server error');
+            err.status=400;
+            next(err);
         }
     },error=>{
         throw new Error(error)

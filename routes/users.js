@@ -66,21 +66,23 @@ router.route('/signup')
     //any other field else to send here 
   }),req.body.password,(err,User)=>{
     if(err){
-      if(err.errmsg && err.errmsg.includes('duplicate key error index: node.users.$email_1')  //for local mongodb
-      || err.errmsg.includes('duplicate key error collection: node.users index: email_1 dup key: { email:'))  //for mongoose atlas
+      if(err.errmsg && (err.errmsg.includes('duplicate key error index: node.users.$email_1')  //for local mongodb
+      || err.errmsg.includes('duplicate key error collection: node.users index: email_1 dup key: { email:')))  //for mongoose atlas
         err= {
           name: "UserExistsError",
           message: "A user with the given email is already registered"
         }
-      res.statusCode=400;
-      res.setHeader('content-type','application/json');
-      res.json({success:false,err:err});
+        err.status=400;
+        next(err);
+      // res.statusCode=400;
+      // res.setHeader('content-type','application/json');
+      // res.json({success:false,err:err});
     }
     else{
       genOTP(req.body.email,'OTP for verifying at restaurant blue grass',`Your OTP to verify your email at restaurant blue grass is<br><h1>`,'verifyOtp');
       res.statusCode=200;
       res.setHeader('content-type','application/json');
-      res.json({success:true, status: 'Registration Successful!\nPlease verify your email by entering otp sent to your email.'})
+      res.json({status: 'Registration Successful!\nPlease verify your email by entering otp sent to your email.'})
     }
   })
 })
@@ -88,11 +90,11 @@ router.route('/login')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .post(cors.corsWithOptions,(req,res,next)=>{
   // console.log(req.body)
-  if(req.body.token){
+  if(req.headers.authorization){
     // console.log(authenticate.verifyUser)
-    res.statusCode=400;
-    res.setHeader('content-type','application/json');
-    res.json({success:false,status:'You are already logged in!'});
+    var err=new Error('You are already logged in!');
+    err.status=400;
+    next(err);
   }
   else{
     // passport.authenticate('local') will authenticate itself and handle any error if occured
@@ -102,20 +104,20 @@ router.route('/login')
       
       // console.log(User);
       if(User && User.verified==false){
-        res.statusCode=400;
-        res.setHeader('content-type','application/json');
-        res.send({success:false, status:'Please verify your email first.'})  
-        next()
+        var err=new Error('Please verify your email first.');
+        err.status=400;
+        next(err);
       }
     })
     passport.authenticate('local',(err,User,info)=>{
       // console.log(err,User,info)
-      if(err)
-        next(err)
+      if(err){
+        res.status(500).send(err);
+      }
       else if(info){
-        var err=new Error(info)
-        next(err)
-        // throw err;
+        var err=new Error("Wrong username or password");
+        err.status=401;
+        next(err);
       }
       else{
         req.user=User
@@ -124,12 +126,9 @@ router.route('/login')
         // res.cookie('token',token,{signed:true,httpOnly:true,expires:new Date(Date.now()+(24*60*60*1000))})
         res.statusCode=200;
         res.setHeader('content-type','application/json');
-        res.send({success:true,token:token, status: 'You are logged in!'})
+        res.send({token:token, status: 'You are logged in!'})
       }
-    })(req,res,()=>{
-      // console.log('hlos')
-      res.send()
-    })
+    })(req,res,next)
     // console.log('as')
   }
 })  
@@ -144,21 +143,19 @@ router.route('/verify/resendOTP')
       res.send({success:false,status:'Email not found.Please register first'})
     }
     else if(User.verified==true){
-      res.statusCode=400
-      res.setHeader('content-type','application/json')
-      res.send({success:false,status:'Email already verified.'})
+      var err=new Error('Email already verified.');
+      err.status=400;
+      next(err);
     }
     else{
       genOTP(req.body.email,'OTP for verifying at restaurant blue grass',`Your OTP to verify your email at restaurant blue grass is<br><h1>`,'verifyOtp');
       res.statusCode=200
       res.setHeader('content-type','application/json')
-      res.send({success:true,status:'OTP sent.'})
+      res.send({status:'OTP sent.'})
     }
   })
   .catch((err)=>{
-    res.statusCode=500
-    res.setHeader('content-type','application/json')
-    res.send({success:false,err:err})
+    next(err);
   })
 })
 router.route('/forgetPassword/genOTP')
@@ -167,9 +164,9 @@ router.route('/forgetPassword/genOTP')
   user.findOne({email:req.body.email})
   .then((User)=>{
     if(!User){
-      res.statusCode=400
-      res.setHeader('content-type','application/json')
-      res.send({success:false,status:'Email not found.Please register first'})
+      var err=new Error('Email not found.Please register first');
+      err.status=400;
+      next(err);
     }
     else{
       genOTP(req.body.email,'OTP for change password at restaurant blue grass',`Your OTP to change password at restaurant blue grass is<br><h1>`,'forgetPasswordOtp')
@@ -177,21 +174,17 @@ router.route('/forgetPassword/genOTP')
         if(result==true){
           res.statusCode=200
           res.setHeader('content-type','application/json')
-          res.send({success:true,status:'OTP sent.'})
+          res.send({status:'OTP sent.'})
         }
         else throw new Error('error occured')
       })
       .catch((err)=>{
-        res.statusCode=500
-        res.setHeader('content-type','application/json')
-        res.send({success:false,err:err})
+        next(err);
       })
     }
   })
   .catch((err)=>{
-    res.statusCode=500
-    res.setHeader('content-type','application/json')
-    res.send({success:false,err:err})
+    next(err);
   })
 })
 router.route('/forgetPassword/changePassword')
@@ -200,22 +193,20 @@ router.route('/forgetPassword/changePassword')
   user.findOne({email:req.body.email})
   .then((User)=>{
     if(!User){
-      res.statusCode=400
-      res.setHeader('content-type','application/json')
-      res.send({success:false,status:'Email not found.Please register first'})
+      var err=new Error('Email not found.Please register first');
+      err.status=400;
+      next(err);
     }
     else{
       if(req.body.otp!=User.forgetPasswordOtp || req.body.otp==-1){
-        res.statusCode=400
-        res.setHeader('content-type','application/json')
-        res.send({success:false,status:'Wrong OTP'})
+        var err=new Error('Wrong OTP');
+        err.status=400;
+        next(err);
       }
       else{
         user.findOneAndUpdate({email:req.body.email},{$set:{forgetPasswordOtp:-1}},(err,User)=>{
           if(err){
-            res.statusCode=500
-            res.setHeader('content-type','application/json')
-            res.send({success:false,err:err})    
+            next(err);   
           }
           else{
             User.setPassword(req.body.password)
@@ -237,48 +228,44 @@ router.route('/verify/verify')
   user.findOne({email:req.body.email})
   .then((User)=>{
     if(!User){
-      res.statusCode=400
-      res.setHeader('content-type','application/json')
-      res.send({success:false,status:'Email not found.Please register first'})
+      var err=new Error('Email not found.Please register first');
+      err.status=400;
+      next(err);
     }
     else if(User.verified==true){
-      res.statusCode=400
-      res.setHeader('content-type','application/json')
-      res.send({success:false,status:'Email already verified.'})
+      var err=new Error('Email already verified.');
+      err.status=400;
+      next(err);
     }
     else if(req.body.otp!=User.verifyOtp || req.body.otp==-1){
-      res.statusCode=400
-      res.setHeader('content-type','application/json')
-      res.send({success:false,status:'Wrong OTP'})
+      var err=new Error('Wrong OTP');
+      err.status=400;
+      next(err);
     }
     else{
       user.findOneAndUpdate({email:req.body.email},{$set:{verified:true,verifyOtp:-1}},(err,User)=>{
         if(err){
-          res.statusCode=500
-          res.setHeader('content-type','application/json')
-          res.send({success:false,err:err})    
+          next(err); 
         }
         else{
           res.statusCode=200
           res.setHeader('content-type','application/json')
-          res.send({success:true,status:'Email verified'})  
+          res.send({status:'Email verified'})  
         }
       })
     } 
   })
   .catch((err)=>{
-    res.statusCode=500
-    res.setHeader('content-type','application/json')
-    res.send({success:false,err:err})
+    next(err);
   })
 })
 router.route('/')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .get(cors.cors,authenticate.verifyUser,(req,res,next)=>{
   if(req.user.admin==false){
-    res.statusCode=400;
-    res.setHeader('content-type','application/json');
-    res.send({success:false, status:'Not allowed'})
+    var err=new Error('Not allowed');
+    err.status=400;
+    next(err);
   }
   user.find({})
   .then((users)=>{
@@ -296,15 +283,15 @@ router.route('/')
       })
     }
     else{
-      res.statusCode=400;
-      res.setHeader('content-type','application/json');
-      res.send({success:true, status: 'You are not allowed this task.'})
+      var err=new Error('You are not allowed this task.');
+      err.status=400;
+      next(err);
     }
   }
   else{
-    res.statusCode=400;
-    res.setHeader('content-type','application/json');
-    res.send({success:true, status: 'Login First.'})
+    var err=new Error('Login First.');
+    err.status=400;
+    next(err);
   }
 })
 
@@ -317,15 +304,14 @@ router.route('/logout')
     // res.clearCookie('token')
     res.statusCode=200
     res.setHeader('content-type','application/json')
-    res.send({success:true,status:'You have successfully logged out'})
+    res.send({status:'You have successfully logged out'})
   }
   else{
     // console.log('B')
-    res.statusCode=400
-    res.setHeader('content-type','application/json')
-    res.send({success:false,status:'Login first.'})
+    var err=new Error('Login first.');
+    err.status=400;
+    next(err);
   }
-  //TODO logout
 })
 
 router.route('/availableUName')
@@ -335,7 +321,7 @@ router.route('/availableUName')
   user.find({username:username})
   .then((User)=>{
     console.log(User)
-    if(User && User.length){
+    if((User && User.length)||(username.search(/admin/i)==-1)){
       res.statusCode=200
       res.setHeader('content-type','application/json')
       res.send({available:false,username:username})

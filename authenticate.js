@@ -47,7 +47,9 @@ var cookieExtractor = (req)=> {
 };
 var opts={}
 // opts.jwtFromRequest=ExtractJwt.fromExtractors([cookieExtractor]);
-opts.jwtFromRequest=ExtractJwt.fromBodyField("token");
+// opts.jwtFromRequest=ExtractJwt.fromBodyField("token");
+opts.jwtFromRequest=ExtractJwt.fromAuthHeaderAsBearerToken();
+
 opts.secretOrKey = config.secretKey
 //payload is the data in token
 passport.use(new JwtStrategy(opts,(jwt_payload,done)=>{
@@ -71,9 +73,10 @@ passport.use(new JwtStrategy(opts,(jwt_payload,done)=>{
 
 exports.verifyUser=(req,res,next)=>{
     var e=new Error();
-    if (req && req.body.token)
+    if(req && req.headers)
     {
-        token = req.body['token'];
+        // token = req.body['token'];
+        token=req.headers.authorization.split(" ")[1]
         jwt.verify(token,config.secretKey,(err,decoded)=>{
             // console.log('err',err)
             // console.log('decode',decoded)
