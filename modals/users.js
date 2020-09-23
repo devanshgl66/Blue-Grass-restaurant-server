@@ -1,3 +1,4 @@
+const { ObjectId } = require('mongodb');
 // const mongoose=require('mongoose');
 // const schema=mongoose.Schema;
 // var userSchema=new schema({
@@ -52,6 +53,10 @@ const user=new mongoose.Schema({
     forgetPasswordOtp:{
         type:Number,
         default:-1
+    },
+    favorite:{
+        type:[{type:ObjectId,ref:'dish'}],
+        
     }
     //ifyou wish to save password here also.
     // ,pwd:{

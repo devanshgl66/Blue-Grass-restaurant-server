@@ -19,6 +19,7 @@ const leaderRouter=require('./routes/leaderRouter');
 const userRouter=require('./routes/users');
 const config=require('./config');
 const feedbackRouter = require('./routes/feedback');
+const favoriteRouter=require('./routes/favorite')
 //connecting mongoose
 mongoose.connect(config.mongodburl,{
     useNewUrlParser:true,
@@ -249,6 +250,7 @@ app.use('/dishes',dishRouter);
 app.use('/promotions',promoRouter);
 app.use('/leaders',leaderRouter);
 app.use('/feedback',feedbackRouter)
+app.use('/favorite',favoriteRouter)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -267,7 +269,7 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.send({err:err.message});
 });
-app.listen(3000,()=>{
-  console.log("server running")
-})
+// app.listen(3001,()=>{
+//   console.log("server running")
+// })
 module.exports = app;

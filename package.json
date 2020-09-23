@@ -2,7 +2,7 @@
   "name": "project",
   "version": "0.0.0",
   "scripts": {
-    "start": "nodemon app.js",
+    "start": "nodemon ./bin/www",
     "localstart": "node ./bin/www"
   },
   "dependencies": {

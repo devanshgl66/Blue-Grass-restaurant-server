@@ -5,6 +5,7 @@ const Dishes=require('../modals/dishes');
 const authenticate=require('../authenticate')
 const cors=require('../cors')
 const imageHelper=require("../helper/images")
+const fs=require('fs')
 const dishRouter=express.Router();
 dishRouter.use(bodyParser.json())
 dishRouter.route('/')
@@ -21,6 +22,7 @@ dishRouter.route('/')
     })
     .catch((err)=>next(err));
 })
+
 .delete(cors.corsWithOptions,authenticate.verifyUser,authenticate.verifyAdmin,(req,res,next)=>{
     // console.log('hello')
     Dishes.deleteMany({})
@@ -34,17 +36,25 @@ dishRouter.route('/')
 .post(cors.corsWithOptions,authenticate.verifyUser,authenticate.verifyAdmin,(req,res,next)=>{
     //insert a document
     //data parsed so it is in req.body
+    console.log('hlo')
     req.dest="./public/images/";
     req.imgName="image";
   imageHelper.uploadImage(req,res,()=>{
+      console.log(req.body.price)
+      req.body.id=req.imageno;
       Dishes.create({
             image:req.name,
             ...req.body
       })
         .then((docs)=>{
-            res.statusCode=200;
-            res.setHeader('content-type','application/json');
-            res.send(docs);     
+            Dishes.find({})
+            .populate('comments.author')
+            .then((dishes)=>{
+                res.statusCode=200;
+                res.setHeader('content-type','application/json');
+                res.send(dishes);
+            })
+            .catch((err)=>next(err)); 
         })
         .catch((err)=>next(err));
   })
@@ -74,27 +84,79 @@ dishRouter.route('/:dishId')
 })
 .delete(cors.corsWithOptions,authenticate.verifyUser,authenticate.verifyAdmin,(req,res,next)=>{
     //delete dish with dish id as dishId
+    
     Dishes.findByIdAndDelete(req.params.dishId)
     .then((resp)=>{
-        res.statusCode=200;
-        res.setHeader('content-type','application/json');
-        res.json(resp);
+        fs.unlinkSync(`./public/${resp.image}`)
+        
+        Dishes.find({})
+        .populate('comments.author')
+        .then((dishes)=>{
+            res.statusCode=200;
+            res.setHeader('content-type','application/json');
+            res.send(dishes);
+        })
+        .catch((err)=>next(err));
     })
     .catch((err)=>next(err));
 })
 .put(cors.corsWithOptions,authenticate.verifyUser,authenticate.verifyAdmin,(req,res,next)=>{
     //update this dish with data provided as body of req
-    Dishes.findByIdAndUpdate(req.params.dishId,{
-        $set:req.body
-    },{
-        new:true
-    })
-    .then((newDish)=>{
-        res.statusCode=200;
-        res.setHeader('content-type','application/json');
-        res.json(newDish);
-    })    
-    .catch((err)=>next(err));
+    // console.log(req.body.length)
+    if(Object.keys(req.body).length == 0){
+    // if(req.body.length!=0){
+        console.log('a');
+        req.dest="./public/images/";
+        req.imgName="image";
+        imageHelper.uploadImage(req,res,()=>{
+            req.body.image=req.name
+            req.body.id=req.imageno;
+            console.log(req.body.comments)
+            delete req.body.comments
+            Dishes.findByIdAndUpdate(req.params.dishId,{
+                $set:req.body
+            },{
+                new:true
+            })
+            .then((newDish)=>{
+                console.log(req.body)
+                // req.body.comments=[]
+                console.log(newDish)
+                Dishes.find({})
+                .populate('comments.author')
+                .then((dishes)=>{
+                    console.log(dishes.length)
+                    res.statusCode=200;
+                    res.setHeader('content-type','application/json');
+                    res.send(dishes);
+                })
+                .catch((err)=>next(err)); 
+            })    
+            .catch((err)=>next(err));
+        })
+    }
+    else{
+        console.log('b')
+        req.body.id=req.imageno;
+        console.log(req.body)
+            Dishes.findByIdAndUpdate(req.params.dishId,{
+                $set:req.body
+            },{
+                new:true
+            })
+            .then((newDish)=>{
+                console.log(newDish)
+                Dishes.find({})
+                .populate('comments.author')
+                .then((dishes)=>{
+                    res.statusCode=200;
+                    res.setHeader('content-type','application/json');
+                    res.send(dishes);
+                })
+                .catch((err)=>next(err)); 
+            })    
+            .catch((err)=>next(err));
+    }
 })
 
 dishRouter.route('/:dishId/comments')

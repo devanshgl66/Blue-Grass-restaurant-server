@@ -90,7 +90,8 @@ router.route('/login')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .post(cors.corsWithOptions,(req,res,next)=>{
   // console.log(req.body)
-  if(req.headers.authorization){
+  // console.log(req.headers.authorization)
+  if(req.headers.authorization && req.headers.authorization.split('Bearer ')[1]!='undefined'){
     // console.log(authenticate.verifyUser)
     var err=new Error('You are already logged in!');
     err.status=400;
@@ -121,12 +122,16 @@ router.route('/login')
       }
       else{
         req.user=User
-        console.log(req.user)
+        
         var token=authenticate.getToken({_id:req.user._id})
+        User.salt=undefined
+        User.hash=undefined
+        console.log(User.salt)
+        console.log(User)
         // res.cookie('token',token,{signed:true,httpOnly:true,expires:new Date(Date.now()+(24*60*60*1000))})
         res.statusCode=200;
         res.setHeader('content-type','application/json');
-        res.send({token:token, status: 'You are logged in!'})
+        res.send({token:token,admin:User.admin, status: 'You are logged in!'})
       }
     })(req,res,next)
     // console.log('as')
@@ -299,7 +304,7 @@ router.route('/')
 router.route('/logout')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .post(cors.corsWithOptions,(req,res,next)=>{
-  if( req.body.token){
+  if( req.headers.authorization && req.headers.authorization.split('Bearer ')[1]!='undefined'){
     // console.log('A')
     // res.clearCookie('token')
     res.statusCode=200

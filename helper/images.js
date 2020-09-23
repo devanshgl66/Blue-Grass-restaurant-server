@@ -8,7 +8,8 @@ exports.uploadImage=(req,res,next)=>{
         destination:dest,
         filename:(req,file,cb)=>{
             if(file.mimetype=="image/jpg" || file.mimetype=="image/png" || file.mimetype=="image/jpeg"){
-                req.name=`${dest.split('public')[1]}${name}.${file.mimetype.split('/')[1]}`;
+                req.name=`${dest.split('public/')[1]}${name}.${file.mimetype.split('/')[1]}`;
+                req.imageno=name;
                 cb(null,`${name}.${file.mimetype.split('/')[1]}`)
             }
             else
@@ -16,6 +17,7 @@ exports.uploadImage=(req,res,next)=>{
         }
     })
     const upload=multer({storage:storage});
+    // console.log(req.imgName)
     upload.single(req.imgName)(req,res,()=>{
         next();
     })

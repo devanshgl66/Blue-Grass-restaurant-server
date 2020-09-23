@@ -49,7 +49,7 @@ const dishSchema=new schema({
         default:''
     },
     price:{
-        type:Currency,
+        type:Number,
         required:true
     },
     featured:{
