@@ -326,7 +326,8 @@ router.route('/availableUName')
   user.find({username:username})
   .then((User)=>{
     console.log(User)
-    if((User && User.length)||(username.search(/admin/i)==-1)){
+    console.log(username.search(/admin/i))
+    if((User && User.length)||(username.search(/admin/i)!=-1)){
       res.statusCode=200
       res.setHeader('content-type','application/json')
       res.send({available:false,username:username})
