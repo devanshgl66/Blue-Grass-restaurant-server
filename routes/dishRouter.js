@@ -36,11 +36,9 @@ dishRouter.route('/')
 .post(cors.corsWithOptions,authenticate.verifyUser,authenticate.verifyAdmin,(req,res,next)=>{
     //insert a document
     //data parsed so it is in req.body
-    console.log('hlo')
     req.dest="./public/images/";
     req.imgName="image";
   imageHelper.uploadImage(req,res,()=>{
-      console.log(req.body.price)
       req.body.id=req.imageno;
       Dishes.create({
             image:req.name,
@@ -104,14 +102,11 @@ dishRouter.route('/:dishId')
     //update this dish with data provided as body of req
     // console.log(req.body.length)
     if(Object.keys(req.body).length == 0){
-    // if(req.body.length!=0){
-        console.log('a');
         req.dest="./public/images/";
         req.imgName="image";
         imageHelper.uploadImage(req,res,()=>{
             req.body.image=req.name
             req.body.id=req.imageno;
-            console.log(req.body.comments)
             delete req.body.comments
             Dishes.findByIdAndUpdate(req.params.dishId,{
                 $set:req.body
@@ -119,7 +114,6 @@ dishRouter.route('/:dishId')
                 new:true
             })
             .then((newDish)=>{
-                console.log(req.body)
                 // req.body.comments=[]
                 console.log(newDish)
                 Dishes.find({})
@@ -136,8 +130,9 @@ dishRouter.route('/:dishId')
         })
     }
     else{
-        console.log('b')
-        req.body.id=req.imageno;
+        // req.body.id=req.imageno;
+        delete req.body.id
+        delete req.body.image
         console.log(req.body)
             Dishes.findByIdAndUpdate(req.params.dishId,{
                 $set:req.body
@@ -145,7 +140,6 @@ dishRouter.route('/:dishId')
                 new:true
             })
             .then((newDish)=>{
-                console.log(newDish)
                 Dishes.find({})
                 .populate('comments.author')
                 .then((dishes)=>{
@@ -177,13 +171,12 @@ dishRouter.route('/:dishId/comments')
         else{
             res.statusCode=404
             res.setHeader('content-type','application/json')
-            res.send({status:'No dish found with id: '+req.params.dishId})                
+            res.send({err:'No dish found with id: '+req.params.dishId})                
         }
     })
     .catch((err)=>next(err));
 })
 .post(cors.corsWithOptions,authenticate.verifyUser,(req,res,next)=>{
-    console.log(req.body)
     //adding comment of given dish
     // Dishes.findById(req.params.dishId)
     Dishes.findOne({id:req.params.dishId})
@@ -209,8 +202,7 @@ dishRouter.route('/:dishId/comments')
         else{
             res.statusCode=404
             res.setHeader('content-type','application/json')
-            res.send({status:'No dish found with id: '+req.params.dishId})                
-        
+            res.send({err:'No dish found with id: '+req.params.dishId})  
         }
     })
     .catch((err)=>next(err));
@@ -235,7 +227,7 @@ dishRouter.route('/:dishId/comments')
         else{
             res.statusCode=404
             res.setHeader('content-type','application/json')
-            res.send({status:'No dish found with id: '+req.params.dishId})                
+            res.send({err:'No dish found with id: '+req.params.dishId})                
         
         }
     })
@@ -262,14 +254,14 @@ dishRouter.route('/:dishId/comments/:commentId')
             else{
                 res.statusCode=404
                 res.setHeader('content-type','application/json')
-                res.send({success:false,status:'Comment '+req.params.commentId+' not found'})                
+                res.send({err:'Comment '+req.params.commentId+' not found'})                
         
             }
         }
         else{
             res.statusCode=404
             res.setHeader('content-type','application/json')
-            res.send({success:false,status:'Dish '+req.params.dishId+' not found'})                
+            res.send({err:'Dish '+req.params.dishId+' not found'})                
         }
     })
     .catch((err)=>next(err));
@@ -286,7 +278,7 @@ dishRouter.route('/:dishId/comments/:commentId')
                     
                     res.statusCode=401
                     res.setHeader('content-type','application/json')
-                    res.send({success:false,status:'unauthorized'})                                    
+                    res.send({err:'unauthorized'})                                    
                     return
                 }
                 dish.comments.id(req.params.commentId).remove();
@@ -300,14 +292,14 @@ dishRouter.route('/:dishId/comments/:commentId')
             else{
                 res.statusCode=404
                 res.setHeader('content-type','application/json')
-                res.send({success:false,status:'Comment '+req.params.commentId+' not found'})                                    
+                res.send({err:'Comment '+req.params.commentId+' not found'})                                    
                 
             }
         }
         else{            
             res.statusCode=404
             res.setHeader('content-type','application/json')
-            res.send({success:false,status:'Dish '+req.params.dishId+' not found'})                                    
+            res.send({err:'Dish '+req.params.dishId+' not found'})                                    
             
         }
     })
@@ -343,14 +335,14 @@ dishRouter.route('/:dishId/comments/:commentId')
             else{
                 res.statusCode=404
                 res.setHeader('content-type','application/json')
-                res.send({success:false,status:'Comment '+req.params.commentId+' not found'})                                    
+                res.send({success:false,err:'Comment '+req.params.commentId+' not found'})                                    
             
             }
         }
         else{
             res.statusCode=404
             res.setHeader('content-type','application/json')
-            res.send({success:false,status:'Dish '+req.params.dishId+' not found'})
+            res.send({success:false,err:'Dish '+req.params.dishId+' not found'})
         }
     })
     .catch((err)=>next(err));

@@ -19,7 +19,7 @@ async function sendOTP(email,otp,subject,text){
       pass: 'Microsoft@12'
     }
   });
-  
+  console.log(email)
   var mailOptions = {
     from: 'restaurantbluegrass@hotmail.com',
     to: email,
@@ -145,7 +145,7 @@ router.route('/verify/resendOTP')
     if(!User){
       res.statusCode=400
       res.setHeader('content-type','application/json')
-      res.send({success:false,status:'Email not found.Please register first'})
+      res.send({success:false,err:'Email not found.Please register first'})
     }
     else if(User.verified==true){
       var err=new Error('Email already verified.');
@@ -165,7 +165,7 @@ router.route('/verify/resendOTP')
 })
 router.route('/forgetPassword/genOTP')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
-.post(cors.corsWithOptions,(req,res,next)=>{
+.post(cors.cors,(req,res,next)=>{
   user.findOne({email:req.body.email})
   .then((User)=>{
     if(!User){
