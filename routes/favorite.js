@@ -74,13 +74,30 @@ favoriteRouter.route('/:dishId')
 .options(cors.corsWithOptions,(req,res)=>{res.statusCode(200)})
 .delete(cors.corsWithOptions,authenticate.verifyUser,(req,res,next)=>{
     User.findById(req.user._id)
-    .then((user)=>{
+    .then(async(user)=>{
         var index=user.favorite.indexOf(req.params.dishId);
         if(index!=-1){
             user.favorite.splice(index,1);
+            await Dishes.find({})
+            .then(dishes=>{
+                for(var i=0;i<user.favorite.length;){
+                    if(user.favorite[i]==null ||user.favorite[i]==undefined||
+                         dishes.some((dish)=>{
+                        return dish._id.toString()==user.favorite[i].toString()
+                    })===false)
+                        user.favorite.splice(i,1);
+                    else   
+                        i++;
+                }
+            })
             user.save()
             .then((user)=>{
-                res.status(200).send(user.favorite)
+                User.findById(req.user.id)
+                .populate('favorite')
+                .populate('comments.author')
+                .then((user)=>
+                    res.status(200).send(user.favorite)
+                )
             })
         }
         else{

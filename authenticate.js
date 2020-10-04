@@ -42,7 +42,7 @@ var cookieExtractor = (req)=> {
             //     return decoded._id
         })
     }
-    console.log(token)
+    // console.log(token)
     return token;
 };
 var opts={}
@@ -56,7 +56,7 @@ passport.use(new JwtStrategy(opts,(jwt_payload,done)=>{
     // console.log('hkk')
     // console.log(jwt_payload)
     user.findOne({_id:jwt_payload._id},(err,User)=>{
-        console.log(err,User)
+        // console.log(err,User)
         if (err){
             // console.log('Invalid username or password')
             done(err,false)
