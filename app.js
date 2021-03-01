@@ -252,6 +252,9 @@ app.use('/leaders',leaderRouter);
 app.use('/feedback',feedbackRouter)
 app.use('/favorite',favoriteRouter)
 
+app.use("/availability", require("./routes/TableAvailabilityRoute"));
+app.use("/reserve", require("./routes/TableReservationRoute"));
+
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
